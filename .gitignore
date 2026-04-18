@@ -1,0 +1,21 @@
+# Backend and Frontend environment variables (NEVER COMMIT THESE)
+.env
+.env.local
+.env.development
+client/.env
+server/.env
+
+# Node modules (too large, let the server install them)
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Build outputs
+client/dist/
+
+# Database files
+server/resqnet_db.json
+
+# OS files
+.DS_Store
+Thumbs.db
