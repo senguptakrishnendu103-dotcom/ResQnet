@@ -70,6 +70,19 @@ async function analyzeCrisisAI(data) {
     }
 }
 
+// LIGHTWEIGHT AI-ONLY ROUTE: POST /api/analyze
+// Client writes to Firestore directly, then calls this for AI analysis only
+app.post('/api/analyze', async (req, res) => {
+    try {
+        const data = req.body;
+        const aiResult = await analyzeCrisisAI(data);
+        res.json({ success: true, aiResult });
+    } catch (error) {
+        console.error('Error in AI analysis:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // SECURE BACKEND ROUTE: POST /api/sos
 app.post('/api/sos', async (req, res) => {
     try {

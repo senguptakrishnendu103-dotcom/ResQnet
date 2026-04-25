@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { db } from './firebase';
-import { collection, onSnapshot, query, orderBy, serverTimestamp, addDoc, limit } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, serverTimestamp, addDoc, limit, doc, updateDoc } from 'firebase/firestore';
 import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
 import Navbar from './components/Navbar';
@@ -109,11 +109,44 @@ function AppContent() {
             status: 'Pending',
             createdAt: serverTimestamp(),
             timestamp: new Date().toLocaleTimeString(),
-            aiAdvice: "Pending AI Analysis..."
+            aiAdvice: "Analyzing with Gemini AI..."
         };
 
+        // 1. Write incident to Firestore immediately
         const docRef = await addDoc(collection(db, 'incidents'), payload);
-        console.log("SOS securely dispatched directly to Firebase:", docRef.id);
+        console.log("SOS dispatched to Firebase:", docRef.id);
+
+        // 2. Call backend for Gemini AI analysis
+        try {
+            const aiResponse = await fetch(`${SERVER_URL}/api/analyze`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    description: form.description,
+                    location: form.location,
+                    media: form.media
+                })
+            });
+
+            if (aiResponse.ok) {
+                const aiData = await aiResponse.json();
+                const aiResult = aiData.aiResult;
+
+                // 3. Update the Firestore document with AI results
+                await updateDoc(doc(db, 'incidents', docRef.id), {
+                    type: aiResult.cat || 'Uncategorized',
+                    priority: aiResult.sev || 'STABLE',
+                    aiAdvice: aiResult.act || 'Awaiting human triage.',
+                    translatedDesc: aiResult.trans || form.description
+                });
+                console.log("AI analysis complete, Firestore updated.");
+            } else {
+                console.error("AI endpoint returned error:", aiResponse.status);
+            }
+        } catch (aiError) {
+            console.error("AI analysis failed (incident still saved):", aiError.message);
+        }
+
         alert("SOS Dispatch Successful!");
     } catch (error) {
          console.error("SOS trigger error:", error);
