@@ -33,11 +33,16 @@ if (!API_KEY) {
     console.error('❌ GEMINI_API_KEY not found in .env');
     process.exit(1);
 }
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
 const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
 // --- Staff email whitelist ---
 const STAFF_EMAILS = (process.env.STAFF_EMAILS || '').split(',').map(e => e.trim().toLowerCase());
+
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', service: 'ResQnet Core API', timestamp: new Date().toISOString() });
+});
 
 app.get('/api/staff', (req, res) => {
     res.json({ staffEmails: STAFF_EMAILS });
@@ -46,7 +51,7 @@ app.get('/api/staff', (req, res) => {
 async function analyzeCrisisAI(data) {
     try {
         const prompt = `Act as an emergency AI dispatcher. Analyze the input. 
-        Return ONLY JSON: {"cat": "Medical/Fire/Security/Earthquake", "sev": "CRITICAL/STABLE", "act": "One instruction", "trans": "English translation"}`;
+        Return ONLY valid JSON with no markdown wrapping: {"cat": "Medical/Fire/Security/Earthquake", "sev": "CRITICAL/STABLE", "act": "One instruction", "trans": "English translation"}`;
         
         const parts = [{ text: prompt }];
         
@@ -54,16 +59,22 @@ async function analyzeCrisisAI(data) {
             parts.push({ text: `Input: ${data.description}` });
         }
         
-        if (data.media) {
-            const mimeType = data.media.split(';')[0].split(':')[1];
-            const base64Data = data.media.split(',')[1];
-            parts.push({ inlineData: { mimeType: mimeType || "image/jpeg", data: base64Data } });
+        if (data.media && typeof data.media === 'string' && data.media.startsWith('data:')) {
+            const match = data.media.match(/^data:([^;]+);base64,(.+)$/);
+            if (match) {
+                const mimeType = match[1] || "image/jpeg";
+                const base64Data = match[2];
+                parts.push({ inlineData: { mimeType, data: base64Data } });
+            }
         }
         
         const result = await model.generateContent(parts);
         const responseText = result.response.text();
-        const cleanedResponse = responseText.replace(/```json|```/g, "").trim();
-        return JSON.parse(cleanedResponse);
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            return JSON.parse(jsonMatch[0]);
+        }
+        throw new Error("No JSON object found in model output: " + responseText);
     } catch (e) {
         console.error('AI analysis error:', e.message);
         return { cat: "Pending", sev: "STABLE", act: "Awaiting human triage.", trans: data.description || "" };

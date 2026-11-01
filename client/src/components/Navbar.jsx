@@ -4,7 +4,7 @@ import { ShieldAlert, LogOut, User, Shield, Radio, Map, BarChart3, AlertTriangle
 
 const TABS = [
   { id: 'guest', label: 'SOS', icon: AlertTriangle, staffOnly: false },
-  { id: 'staff', label: 'Command Hub', icon: Activity, staffOnly: false },
+  { id: 'staff', label: 'Command Hub', icon: Activity, staffOnly: true },
   { id: 'map', label: 'Map', icon: Map, staffOnly: false },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, staffOnly: false },
 ];
@@ -16,6 +16,8 @@ export default function Navbar({ view, setView, isConnected }) {
   const handleLogout = async () => {
     await logout();
   };
+
+  const visibleTabs = TABS.filter(tab => !tab.staffOnly || user?.role === 'staff');
 
   return (
     <nav className="navbar">
@@ -34,7 +36,7 @@ export default function Navbar({ view, setView, isConnected }) {
 
         {/* View Toggle — multi-tab */}
         <div className="navbar-tabs">
-          {TABS.map((tab) => (
+          {visibleTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setView(tab.id)}

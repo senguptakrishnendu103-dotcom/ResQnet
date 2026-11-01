@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user has staff privileges
+    function isStaff() {
+      return isAuthenticated() && (
+        request.auth.token.email.matches('.*staff.*') ||
+        request.auth.token.email in ['staff@resqnet.com', 'admin@resqnet.com']
+      );
+    }
+
+    // Incidents Collection
+    match /incidents/{incidentId} {
+      // Anyone (public/civilians) can read incidents for map & stats
+      allow read: if true;
+      
+      // Anyone can create an incident (SOS dispatch must be accessible even anonymously or in crisis)
+      allow create: if request.resource.data.location is string
+                    && request.resource.data.location.size() > 0;
+      
+      // Only staff can update incident status/resolution,
+      // OR allow the dispatcher to attach AI predictions immediately after creation
+      allow update: if isStaff() || (
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['type', 'priority', 'aiAdvice', 'translatedDesc'])
+      );
+      
+      // Only staff can delete/archive incidents
+      allow delete: if isStaff();
+    }
+
+    // Broadcasts Collection
+    match /broadcasts/{broadcastId} {
+      // All civilians and responders can read real-time mass emergency alerts
+      allow read: if true;
+      
+      // Only staff commanders can create or delete broadcast alerts
+      allow create: if isStaff() && request.resource.data.message is string;
+      allow update, delete: if isStaff();
+    }
+  }
+}

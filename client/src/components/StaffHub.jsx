@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Activity, Megaphone, AlertTriangle, CheckCircle, Clock, Loader2 } from 'lucide-react';
-import IncidentCard from './IncidentCard';import { db } from '../firebase';
+import IncidentCard from './IncidentCard';
+import { db } from '../firebase';
 import { collection, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+
 export default function StaffHub({ incidents }) {
   const [broadcastText, setBroadcastText] = useState('');
   const [sending, setSending] = useState(false);

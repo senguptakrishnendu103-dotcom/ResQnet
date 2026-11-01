@@ -1,27 +1,55 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Upload, Mic, Trash2, MapPin, Loader2, AlertTriangle } from 'lucide-react';
 
 export default function SOSForm({ form, setForm, onSubmit, isAnalyzing }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [showCam, setShowCam] = useState(false);
+  const [mediaStream, setMediaStream] = useState(null);
+
+  useEffect(() => {
+    if (showCam && videoRef.current && mediaStream) {
+      videoRef.current.srcObject = mediaStream;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [showCam, mediaStream]);
+
+  // Clean up media stream on unmount
+  useEffect(() => {
+    return () => {
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, [mediaStream]);
 
   const handleCameraOpen = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      videoRef.current.srcObject = stream;
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
+      setMediaStream(stream);
       setShowCam(true);
-    } catch {
-      alert('Camera access denied');
+    } catch (err) {
+      console.error('Camera access error:', err);
+      alert('Camera access denied or unavailable.');
     }
   };
 
+  const handleCameraClose = () => {
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(t => t.stop());
+      setMediaStream(null);
+    }
+    setShowCam(false);
+  };
+
   const handleCapture = () => {
+    if (!videoRef.current || !canvasRef.current) return;
     const ctx = canvasRef.current.getContext('2d');
     ctx.drawImage(videoRef.current, 0, 0, 640, 480);
-    setForm({ ...form, media: canvasRef.current.toDataURL('image/jpeg') });
-    videoRef.current.srcObject.getTracks().forEach(t => t.stop());
-    setShowCam(false);
+    setForm({ ...form, media: canvasRef.current.toDataURL('image/jpeg', 0.8) });
+    handleCameraClose();
   };
 
   const handleFileUpload = (e) => {
@@ -100,16 +128,13 @@ export default function SOSForm({ form, setForm, onSubmit, isAnalyzing }) {
           {/* Camera overlay */}
           {showCam && (
             <div className="camera-overlay">
-              <video ref={videoRef} autoPlay className="camera-preview" />
+              <video ref={videoRef} autoPlay playsInline className="camera-preview" />
               <button type="button" onClick={handleCapture} className="camera-capture-btn">
                 Capture Image
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  videoRef.current.srcObject?.getTracks().forEach(t => t.stop());
-                  setShowCam(false);
-                }}
+                onClick={handleCameraClose}
                 className="camera-cancel-btn"
               >
                 Cancel

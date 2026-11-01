@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { MapPin, AlertTriangle, Clock, Zap, Shield } from 'lucide-react';
+import { MapPin, Clock, Zap } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
 // Fix default marker icon issue in Leaflet + bundlers

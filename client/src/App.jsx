@@ -30,10 +30,16 @@ function AppContent() {
     setView(user.role === 'staff' ? 'staff' : 'guest');
 
     // Firestore Listeners
+    let isInitialIncidentsLoad = true;
     const q = query(collection(db, 'incidents'), orderBy('createdAt', 'desc'));
     const unsubscribeIncidents = onSnapshot(q, (snapshot) => {
       const incList = snapshot.docs.map(doc => ({ firebaseId: doc.id, ...doc.data() }));
       setIncidents(incList);
+
+      if (isInitialIncidentsLoad) {
+        isInitialIncidentsLoad = false;
+        return;
+      }
 
       if (user?.role === 'staff') {
         snapshot.docChanges().forEach((change) => {
@@ -200,7 +206,7 @@ function AppContent() {
           </div>
         )}
 
-        {view === 'staff' && (
+        {view === 'staff' && user?.role === 'staff' && (
           <StaffHub incidents={incidents} />
         )}
 
