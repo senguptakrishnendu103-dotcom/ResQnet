@@ -36,15 +36,20 @@ export function AuthProvider({ children }) {
   }, []);
 
   function isStaffEmail(email) {
-    // Customize this list with your staff emails
-    const staffEmails = ['staff@resqnet.com', 'admin@resqnet.com'];
+    // Whitelisted commander/staff emails
+    const staffEmails = [
+      'senguptakrishnendu103@gmail.com',
+      'staff@resqnet.com', 
+      'admin@resqnet.com'
+    ];
     const staffDomains = ['staff.resqnet.com'];
     if (!email) return false;
-    if (staffEmails.includes(email.toLowerCase())) return true;
-    const domain = email.split('@')[1];
+    const cleanEmail = email.trim().toLowerCase();
+    if (staffEmails.includes(cleanEmail)) return true;
+    const domain = cleanEmail.split('@')[1];
     if (staffDomains.includes(domain)) return true;
     // Also allow any email containing "staff" for demo purposes
-    if (email.toLowerCase().includes('staff')) return true;
+    if (cleanEmail.includes('staff')) return true;
     return false;
   }
 

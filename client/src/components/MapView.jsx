@@ -51,21 +51,32 @@ function createTacticalBeacon(priority, status, type) {
   });
 }
 
+const cartoKey = import.meta.env.VITE_CARTO_API_KEY;
+
 const TILE_LAYERS = {
   dark: {
     name: 'Tactical Dark',
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; CARTO &copy; OpenStreetMap'
+    // Uses watermark-free Esri Dark Gray canvas by default, or CARTO if API key is provided
+    url: cartoKey 
+      ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?api_key=${cartoKey}`
+      : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    attribution: cartoKey ? '&copy; CARTO &copy; OpenStreetMap' : 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+    maxZoom: cartoKey ? 19 : 16
   },
   satellite: {
     name: 'Satellite Recon',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attribution: 'Tiles &copy; Esri &mdash; Earthstar Geographics'
+    attribution: 'Tiles &copy; Esri &mdash; Earthstar Geographics',
+    maxZoom: 19
   },
   streets: {
     name: 'High Contrast',
-    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; CARTO &copy; OpenStreetMap'
+    // Uses standard OpenStreetMap by default, or CARTO Voyager if API key is provided
+    url: cartoKey
+      ? `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?api_key=${cartoKey}`
+      : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: cartoKey ? '&copy; CARTO &copy; OpenStreetMap' : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19
   }
 };
 
@@ -213,8 +224,10 @@ export default function MapView({
             style={{ height: '100%', width: '100%' }}
           >
             <TileLayer
+              key={tileMode}
               attribution={TILE_LAYERS[tileMode].attribution}
               url={TILE_LAYERS[tileMode].url}
+              maxZoom={TILE_LAYERS[tileMode].maxZoom || 19}
             />
             
             <MapController incidents={filteredIncidents} focusedIncident={focusedIncident} />

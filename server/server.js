@@ -38,7 +38,8 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
 // --- Staff email whitelist ---
-const STAFF_EMAILS = (process.env.STAFF_EMAILS || '').split(',').map(e => e.trim().toLowerCase());
+const DEFAULT_STAFF = 'senguptakrishnendu103@gmail.com,staff@resqnet.com,admin@resqnet.com';
+const STAFF_EMAILS = (process.env.STAFF_EMAILS || DEFAULT_STAFF).split(',').map(e => e.trim().toLowerCase());
 
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', service: 'ResQnet Core API', timestamp: new Date().toISOString() });
