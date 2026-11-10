@@ -76,6 +76,7 @@ export function AuthProvider({ children }) {
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (err) {
+      console.error('Google Sign-In Error:', err);
       setError(getErrorMessage(err.code));
       throw err;
     }
@@ -99,9 +100,13 @@ export function AuthProvider({ children }) {
       'auth/email-already-in-use': 'An account already exists with this email.',
       'auth/weak-password': 'Password must be at least 6 characters.',
       'auth/popup-closed-by-user': 'Sign-in popup was closed.',
+      'auth/cancelled-popup-request': 'Sign-in popup was cancelled.',
+      'auth/popup-blocked': 'Sign-in popup was blocked by browser. Please allow popups for this site.',
+      'auth/unauthorized-domain': 'This domain is not authorized in Firebase Console (Authentication > Settings > Authorized domains).',
+      'auth/network-request-failed': 'Network request failed. Please check your internet connection.',
       'auth/invalid-credential': 'Invalid credentials. Please check and try again.',
     };
-    return messages[code] || 'Authentication failed. Please try again.';
+    return messages[code] || `Authentication failed (${code || 'unknown'}). Please try again.`;
   }
 
   const value = { user, loading, error, login, signup, loginWithGoogle, logout, clearError };
