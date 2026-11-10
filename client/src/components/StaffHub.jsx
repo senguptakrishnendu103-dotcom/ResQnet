@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
+import Spinner from './Spinner';
 import { 
   Activity, Megaphone, AlertTriangle, CheckCircle, Clock, 
-  Loader2, Radio, LayoutGrid, Columns3, Split, Search, 
+  Radio, LayoutGrid, Columns3, Split, Search, 
   Filter, ShieldAlert, Sparkles, Send, Crosshair, ChevronRight
 } from 'lucide-react';
 import IncidentCard from './IncidentCard';
@@ -157,7 +158,7 @@ export default function StaffHub({ incidents = [] }) {
               disabled={sending || !broadcastText.trim()}
             >
               {sending ? (
-                <Loader2 size={16} className="animate-spin" />
+                <Spinner size="sm" />
               ) : (
                 <>
                   <Send size={16} />

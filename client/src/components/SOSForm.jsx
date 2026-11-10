@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Upload, Mic, Trash2, MapPin, Loader2, AlertTriangle } from 'lucide-react';
+import Spinner from './Spinner';
+import { Camera, Upload, Mic, Trash2, MapPin, AlertTriangle } from 'lucide-react';
 
 export default function SOSForm({ form, setForm, onSubmit, isAnalyzing }) {
   const videoRef = useRef(null);
@@ -170,7 +171,7 @@ export default function SOSForm({ form, setForm, onSubmit, isAnalyzing }) {
           <button type="submit" disabled={isAnalyzing} className="sos-submit-btn">
             {isAnalyzing ? (
               <>
-                <Loader2 size={24} className="animate-spin" />
+                <Spinner size="sm" />
                 <span>AI Analyzing Crisis...</span>
               </>
             ) : (

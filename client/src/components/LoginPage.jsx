@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, Globe, Mail, Lock, User, ArrowRight, ArrowLeft, Loader2, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import Spinner from './Spinner';
+import { ShieldAlert, Globe, Mail, Lock, User, ArrowRight, ArrowLeft, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage({ onBack }) {
   const { login, signup, loginWithGoogle, error, clearError } = useAuth();
@@ -127,7 +128,7 @@ export default function LoginPage({ onBack }) {
 
           <button type="submit" className="login-submit-btn" disabled={loading}>
             {loading ? (
-              <Loader2 size={22} className="animate-spin" />
+              <Spinner size="sm" />
             ) : (
               <>
                 {isSignUp ? 'Create Account' : 'Sign In'}
@@ -145,7 +146,7 @@ export default function LoginPage({ onBack }) {
         {/* Google sign-in */}
         <button onClick={handleGoogle} className="login-google-btn" disabled={googleLoading}>
           {googleLoading ? (
-            <Loader2 size={20} className="animate-spin" />
+            <Spinner size="sm" />
           ) : (
             <>
               <svg viewBox="0 0 24 24" width="20" height="20">

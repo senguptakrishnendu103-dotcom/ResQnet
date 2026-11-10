@@ -11,7 +11,8 @@ import StaffHub from './components/StaffHub';
 import MapView from './components/MapView';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import BroadcastOverlay from './components/BroadcastOverlay';
-import { Radio, Loader2 } from 'lucide-react';
+import Spinner from './components/Spinner';
+import { Radio } from 'lucide-react';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'https://resqnet-kpo0.onrender.com';
 
@@ -169,7 +170,7 @@ function AppContent() {
     return (
       <div className="app-loading-screen">
         <div className="app-loading-content">
-          <Loader2 size={48} className="animate-spin" style={{ color: '#e11d48' }} />
+          <Spinner />
           <p className="app-loading-text">Initializing ResQnet Serverless...</p>
         </div>
       </div>
