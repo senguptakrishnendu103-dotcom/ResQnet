@@ -14,3 +14,4 @@ export default function Spinner({ size = 'default', className = '' }) {
     </div>
   );
 }
+

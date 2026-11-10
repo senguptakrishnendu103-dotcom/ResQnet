@@ -10,6 +10,7 @@ import EmergencyDirectory from './components/EmergencyDirectory';
 import StaffHub from './components/StaffHub';
 import MapView from './components/MapView';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
+import HospitalityHub from './components/HospitalityHub';
 import BroadcastOverlay from './components/BroadcastOverlay';
 import Spinner from './components/Spinner';
 import { Radio } from 'lucide-react';
@@ -19,6 +20,7 @@ const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'https://resqnet-kpo0.onre
 function AppContent() {
   const { user, loading } = useAuth();
   const [view, setView] = useState('guest');
+  const [sectorMode, setSectorMode] = useState('emergency');
   const [incidents, setIncidents] = useState([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [broadcast, setBroadcast] = useState(null);
@@ -188,7 +190,13 @@ function AppContent() {
     <div className="app-root">
       <BroadcastOverlay broadcast={broadcast} onDismiss={dismissBroadcast} />
       {/* Firebase is serverless, connection is handled natively, hardcode true for UI */}
-      <Navbar view={view} setView={setView} isConnected={true} />
+      <Navbar 
+        view={view} 
+        setView={setView} 
+        isConnected={true} 
+        sectorMode={sectorMode} 
+        setSectorMode={setSectorMode} 
+      />
 
       <main className="app-main">
         {view === 'guest' && (
@@ -205,6 +213,12 @@ function AppContent() {
               <EmergencyDirectory />
             </div>
           </div>
+        )}
+
+        {view === 'hospitality' && (
+          <HospitalityHub onNavigateToMap={(coords) => {
+            setView('map');
+          }} />
         )}
 
         {view === 'staff' && user?.role === 'staff' && (

@@ -24,7 +24,15 @@ function createTacticalBeacon(priority, status, type) {
   let color = '#f59e0b';
   let badgeLetter = 'S';
 
-  if (isResolved) {
+  if (type === 'hospital' || priority === 'HOSPITAL') {
+    beaconClass = 'beacon-hospital';
+    color = '#06b6d4';
+    badgeLetter = '🏥';
+  } else if (type === 'hotel' || type === 'shelter' || priority === 'SHELTER') {
+    beaconClass = 'beacon-shelter';
+    color = '#10b981';
+    badgeLetter = '🏨';
+  } else if (isResolved) {
     beaconClass = 'beacon-resolved';
     color = '#10b981';
     badgeLetter = '✓';
@@ -41,7 +49,7 @@ function createTacticalBeacon(priority, status, type) {
         <div class="beacon-wave wave-1"></div>
         <div class="beacon-wave wave-2"></div>
         <div class="beacon-core" style="background: ${color}; box-shadow: 0 0 16px ${color}">
-          <span class="beacon-glyph">${badgeLetter}</span>
+          <span class="beacon-glyph" style="font-size: 13px;">${badgeLetter}</span>
         </div>
       </div>
     `,
@@ -112,6 +120,63 @@ function MapController({ incidents, focusedIncident }) {
   return null;
 }
 
+export const HOSPITALITY_FACILITIES = [
+  {
+    id: 'fac-hosp-01',
+    type: 'hospital',
+    priority: 'HOSPITAL',
+    name: 'Apex Super-Specialty & Trauma Center',
+    coords: '22.5804, 88.4326',
+    location: 'Sector 5, Salt Lake, Kolkata',
+    availableCapacity: 34,
+    totalCapacity: 250,
+    icuBeds: 8,
+    status: 'Ready',
+    contact: '+91 33 2357 0000',
+    description: 'Trauma ICU & Burn Unit'
+  },
+  {
+    id: 'fac-hotel-01',
+    type: 'hotel',
+    priority: 'SHELTER',
+    name: 'Grand Horizon Hotel & Evacuation Suites',
+    coords: '22.5867, 88.4682',
+    location: 'New Town Action Area 1, Kolkata',
+    availableCapacity: 48,
+    totalCapacity: 120,
+    status: 'Open',
+    contact: '+91 33 6688 1234',
+    description: 'Emergency Evacuee Suites'
+  },
+  {
+    id: 'fac-hosp-02',
+    type: 'hospital',
+    priority: 'HOSPITAL',
+    name: 'Apollo Emergency & Pediatric Care',
+    coords: '22.5697, 88.3995',
+    location: 'Canal Circular Road, Phoolbagan',
+    availableCapacity: 19,
+    totalCapacity: 180,
+    icuBeds: 4,
+    status: 'Surge',
+    contact: '+91 33 2320 3040',
+    description: 'Pediatric ICU & Emergency Triage'
+  },
+  {
+    id: 'fac-shelter-01',
+    type: 'shelter',
+    priority: 'SHELTER',
+    name: 'Netaji Stadium Relief Camp',
+    coords: '22.5714, 88.4120',
+    location: 'Bidhannagar Sports Complex',
+    availableCapacity: 145,
+    totalCapacity: 400,
+    status: 'Open 24/7',
+    contact: '+91 98300 11223',
+    description: 'Disaster Relief Shelter & Rations'
+  }
+];
+
 export default function MapView({ 
   incidents = [], 
   focusedIncident = null, 
@@ -121,20 +186,31 @@ export default function MapView({
   const [tileMode, setTileMode] = useState('dark');
   const [filterPriority, setFilterPriority] = useState('ALL');
 
+  // Combine live disaster incidents with hospitality & healthcare facilities
+  const allMapEntities = useMemo(() => {
+    return [...incidents, ...HOSPITALITY_FACILITIES];
+  }, [incidents]);
+
   const validIncidents = useMemo(() => {
-    return incidents.filter(i => {
+    return allMapEntities.filter(i => {
       if (!i.coords) return false;
       const [lat, lng] = i.coords.split(',').map(Number);
       return !isNaN(lat) && !isNaN(lng);
     });
-  }, [incidents]);
+  }, [allMapEntities]);
 
   const filteredIncidents = useMemo(() => {
     if (filterPriority === 'CRITICAL') {
       return validIncidents.filter(i => i.priority === 'CRITICAL' && i.status !== 'Resolved');
     }
     if (filterPriority === 'ACTIVE') {
-      return validIncidents.filter(i => i.status !== 'Resolved');
+      return validIncidents.filter(i => i.status !== 'Resolved' && i.priority !== 'HOSPITAL' && i.priority !== 'SHELTER');
+    }
+    if (filterPriority === 'HOSPITAL') {
+      return validIncidents.filter(i => i.type === 'hospital' || i.priority === 'HOSPITAL');
+    }
+    if (filterPriority === 'SHELTER') {
+      return validIncidents.filter(i => i.type === 'hotel' || i.type === 'shelter' || i.priority === 'SHELTER');
     }
     if (filterPriority === 'RESOLVED') {
       return validIncidents.filter(i => i.status === 'Resolved');
@@ -204,6 +280,22 @@ export default function MapView({
             >
               Active ({activeCount})
             </button>
+            <button
+              type="button"
+              onClick={() => setFilterPriority('HOSPITAL')}
+              className={`map-filter-chip ${filterPriority === 'HOSPITAL' ? 'active' : ''}`}
+              style={{ color: '#06b6d4' }}
+            >
+              🏥 Hospitals (2)
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterPriority('SHELTER')}
+              className={`map-filter-chip ${filterPriority === 'SHELTER' ? 'active' : ''}`}
+              style={{ color: '#10b981' }}
+            >
+              🏨 Hotels/Shelters (2)
+            </button>
           </div>
         </div>
       </div>
@@ -262,14 +354,23 @@ export default function MapView({
                       </div>
 
                       {/* Title & Category */}
-                      <h4 className="popup-incident-location">{incident.location}</h4>
-                      {incident.type && (
+                      <h4 className="popup-incident-location">{incident.name || incident.location}</h4>
+                      {incident.availableCapacity !== undefined && (
+                        <div className="popup-category-badge" style={{ color: '#4ecdc4', background: 'rgba(6,182,212,0.1)' }}>
+                          <span>Capacity:</span> <strong>{incident.availableCapacity} / {incident.totalCapacity} Free</strong>
+                          {incident.icuBeds && <span className="ml-1 text-rose-400">({incident.icuBeds} ICU)</span>}
+                        </div>
+                      )}
+                      {incident.type && !incident.name && (
                         <div className="popup-category-badge">
                           <span>Sector:</span> <strong>{incident.type}</strong>
                         </div>
                       )}
 
-                      {/* Multilingual Translation */}
+                      {/* Multilingual Translation or Facility Description */}
+                      {incident.description && incident.name && (
+                        <p className="popup-translation-text">"{incident.description}"</p>
+                      )}
                       {incident.translatedDesc && (
                         <p className="popup-translation-text">"{incident.translatedDesc}"</p>
                       )}

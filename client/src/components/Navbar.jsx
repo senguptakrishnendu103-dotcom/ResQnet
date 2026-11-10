@@ -1,15 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, LogOut, User, Shield, Radio, Map, BarChart3, AlertTriangle, Activity } from 'lucide-react';
+import CosmicToggle from './CosmicToggle';
+import { ShieldAlert, LogOut, User, Shield, Radio, Map, BarChart3, AlertTriangle, Activity, Building2 } from 'lucide-react';
 
-const TABS = [
-  { id: 'guest', label: 'SOS', icon: AlertTriangle, staffOnly: false },
-  { id: 'staff', label: 'Command Hub', icon: Activity, staffOnly: true },
-  { id: 'map', label: 'Map', icon: Map, staffOnly: false },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3, staffOnly: false },
-];
-
-export default function Navbar({ view, setView, isConnected }) {
+export default function Navbar({ view, setView, isConnected, sectorMode = 'emergency', setSectorMode }) {
   const { user, logout } = useAuth();
   const [showLogout, setShowLogout] = useState(false);
 
@@ -17,7 +11,25 @@ export default function Navbar({ view, setView, isConnected }) {
     await logout();
   };
 
-  const visibleTabs = TABS.filter(tab => !tab.staffOnly || user?.role === 'staff');
+  const getTabs = () => {
+    if (sectorMode === 'hospitality') {
+      return [
+        { id: 'hospitality', label: 'Beds & Shelters', icon: Building2, staffOnly: false },
+        { id: 'map', label: 'Tactical Map', icon: Map, staffOnly: false },
+        { id: 'analytics', label: 'Analytics', icon: BarChart3, staffOnly: false },
+        { id: 'staff', label: 'Command Hub', icon: Activity, staffOnly: true },
+      ];
+    }
+    return [
+      { id: 'guest', label: 'SOS', icon: AlertTriangle, staffOnly: false },
+      { id: 'hospitality', label: 'Care Grid', icon: Building2, staffOnly: false },
+      { id: 'map', label: 'Map', icon: Map, staffOnly: false },
+      { id: 'analytics', label: 'Analytics', icon: BarChart3, staffOnly: false },
+      { id: 'staff', label: 'Command Hub', icon: Activity, staffOnly: true },
+    ];
+  };
+
+  const visibleTabs = getTabs().filter(tab => !tab.staffOnly || user?.role === 'staff');
 
   return (
     <nav className="navbar">
@@ -33,6 +45,32 @@ export default function Navbar({ view, setView, isConnected }) {
             <span>{isConnected ? 'LIVE' : 'OFFLINE'}</span>
           </div>
         </div>
+
+        {/* Cosmic Sector Switcher */}
+        {setSectorMode && (
+          <div className="cosmic-toggle-wrapper">
+            <span className={`cosmic-toggle-label ${sectorMode === 'emergency' ? 'active' : ''}`}>
+              <AlertTriangle size={12} className={sectorMode === 'emergency' ? 'text-rose-400' : ''} />
+              <span className="hidden sm:inline">Crisis</span>
+            </span>
+            <CosmicToggle
+              checked={sectorMode === 'hospitality'}
+              onChange={(checked) => {
+                const newMode = checked ? 'hospitality' : 'emergency';
+                setSectorMode(newMode);
+                if (checked && view === 'guest') {
+                  setView('hospitality');
+                } else if (!checked && view === 'hospitality') {
+                  setView('guest');
+                }
+              }}
+            />
+            <span className={`cosmic-toggle-label ${sectorMode === 'hospitality' ? 'active' : ''}`}>
+              <Building2 size={12} className={sectorMode === 'hospitality' ? 'text-cyan-400' : ''} />
+              <span className="hidden sm:inline">Care Hub</span>
+            </span>
+          </div>
+        )}
 
         {/* View Toggle — multi-tab */}
         <div className="navbar-tabs">
