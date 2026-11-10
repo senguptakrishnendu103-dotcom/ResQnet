@@ -1,11 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import CosmicToggle from './CosmicToggle';
-import { ShieldAlert, LogOut, User, Shield, Radio, Map, BarChart3, AlertTriangle, Activity, Building2 } from 'lucide-react';
+import { 
+  ShieldAlert, LogOut, User, Shield, Radio, Map, 
+  BarChart3, AlertTriangle, Activity, Building2, Coffee, Moon 
+} from 'lucide-react';
 
 export default function Navbar({ view, setView, isConnected, sectorMode = 'emergency', setSectorMode }) {
   const { user, logout } = useAuth();
   const [showLogout, setShowLogout] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('resqnet-theme') || 'coffee';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('resqnet-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'coffee' ? 'dark' : 'coffee');
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -86,8 +101,26 @@ export default function Navbar({ view, setView, isConnected, sectorMode = 'emerg
           ))}
         </div>
 
-        {/* User section */}
+        {/* User section & Theme Toggle */}
         <div className="navbar-user">
+          <button
+            onClick={toggleTheme}
+            className="theme-toggle-btn"
+            title={`Switch to ${theme === 'coffee' ? 'Cosy Dark' : 'Coffee White'} mode`}
+          >
+            {theme === 'coffee' ? (
+              <>
+                <Coffee size={14} style={{ color: '#c06c36' }} />
+                <span className="hidden md:inline">Coffee</span>
+              </>
+            ) : (
+              <>
+                <Moon size={14} style={{ color: '#e08a47' }} />
+                <span className="hidden md:inline">Cosy Dark</span>
+              </>
+            )}
+          </button>
+
           <div className="navbar-user-info">
             {user?.photoURL ? (
               <img src={user.photoURL} alt="" className="navbar-avatar" />

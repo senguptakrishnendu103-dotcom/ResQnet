@@ -30,3 +30,4 @@ export default function CosmicToggle({ checked, onChange, compact = true, classN
     </label>
   );
 }
+

@@ -257,14 +257,14 @@ export default function HospitalityHub({ onNavigateToMap }) {
         </div>
 
         {/* Search input */}
-        <div className="relative flex-1 min-w-[240px] max-w-md">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <div className="hospitality-search-wrap">
+          <Search size={16} className="hospitality-search-icon" />
           <input
             type="text"
             placeholder="Search facility name, district, or amenity..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-900/80 border border-slate-700/60 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400/50"
+            className="hospitality-search-input"
           />
         </div>
       </div>
@@ -388,28 +388,28 @@ export default function HospitalityHub({ onNavigateToMap }) {
 
       {/* Reservation / Admission Modal */}
       {bookingModalEntity && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-slate-900 border border-cyan-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
-            <h2 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
-              <Sparkles size={20} className="text-cyan-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-default)] rounded-2xl max-w-md w-full p-6 shadow-2xl relative text-[var(--text-primary)]">
+            <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
+              <Sparkles size={20} className="text-[var(--accent)]" />
               {bookingModalEntity.type === 'hospital' ? 'Emergency Bed Admission' : 'Evacuee Shelter Reservation'}
             </h2>
-            <p className="text-xs text-slate-400 mb-4">
-              Direct allocation for <span className="text-white font-bold">{bookingModalEntity.name}</span>
+            <p className="text-xs text-[var(--text-secondary)] mb-4">
+              Direct allocation for <span className="font-bold text-[var(--text-primary)]">{bookingModalEntity.name}</span>
             </p>
 
             {bookingSuccess ? (
               <div className="py-8 text-center flex flex-col items-center gap-3">
-                <CheckCircle size={48} className="text-emerald-400 animate-bounce" />
-                <h3 className="text-lg font-bold text-white">Allocation Confirmed!</h3>
-                <p className="text-xs text-slate-400">
+                <CheckCircle size={48} className="text-emerald-500 animate-bounce" />
+                <h3 className="text-lg font-bold text-[var(--text-primary)]">Allocation Confirmed!</h3>
+                <p className="text-xs text-[var(--text-secondary)]">
                   Priority dispatch ticket generated. The facility coordinator has received this dispatch.
                 </p>
               </div>
             ) : (
               <form onSubmit={handleBookingSubmit} className="flex flex-col gap-4">
                 <div>
-                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1">
+                  <label className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider block mb-1">
                     Beneficiary / Patient Name
                   </label>
                   <input
@@ -418,13 +418,13 @@ export default function HospitalityHub({ onNavigateToMap }) {
                     value={bookingForm.name}
                     onChange={e => setBookingForm({ ...bookingForm, name: e.target.value })}
                     placeholder="Full legal name"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1">
+                    <label className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider block mb-1">
                       Contact Number
                     </label>
                     <input
@@ -433,11 +433,11 @@ export default function HospitalityHub({ onNavigateToMap }) {
                       value={bookingForm.phone}
                       onChange={e => setBookingForm({ ...bookingForm, phone: e.target.value })}
                       placeholder="+91..."
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400"
+                      className="w-full bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1">
+                    <label className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider block mb-1">
                       {bookingModalEntity.type === 'hospital' ? 'Patients' : 'Guests / Family'}
                     </label>
                     <input
@@ -446,13 +446,13 @@ export default function HospitalityHub({ onNavigateToMap }) {
                       max="10"
                       value={bookingForm.count}
                       onChange={e => setBookingForm({ ...bookingForm, count: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400"
+                      className="w-full bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1">
+                  <label className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider block mb-1">
                     Medical Condition / Special Needs
                   </label>
                   <textarea
@@ -460,7 +460,7 @@ export default function HospitalityHub({ onNavigateToMap }) {
                     value={bookingForm.notes}
                     onChange={e => setBookingForm({ ...bookingForm, notes: e.target.value })}
                     placeholder="E.g. requires oxygen, wheelchair access, burns, etc."
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-default)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
                   />
                 </div>
 
@@ -468,13 +468,13 @@ export default function HospitalityHub({ onNavigateToMap }) {
                   <button
                     type="button"
                     onClick={() => setBookingModalEntity(null)}
-                    className="flex-1 py-2.5 rounded-lg border border-slate-700 text-slate-300 font-bold text-xs uppercase hover:bg-slate-800 transition-colors"
+                    className="flex-1 py-2.5 rounded-lg border border-[var(--border-default)] text-[var(--text-secondary)] font-bold text-xs uppercase hover:bg-[var(--bg-elevated)] transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-bold text-xs uppercase hover:brightness-110 transition-all shadow-lg shadow-cyan-500/20"
+                    className="flex-1 py-2.5 rounded-lg bg-[var(--accent)] text-white font-bold text-xs uppercase hover:brightness-110 transition-all shadow-lg"
                   >
                     Confirm Dispatch
                   </button>
@@ -487,3 +487,4 @@ export default function HospitalityHub({ onNavigateToMap }) {
     </div>
   );
 }
+
