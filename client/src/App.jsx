@@ -13,6 +13,7 @@ import AnalyticsDashboard from './components/AnalyticsDashboard';
 import HospitalityHub from './components/HospitalityHub';
 import BroadcastOverlay from './components/BroadcastOverlay';
 import Spinner from './components/Spinner';
+import bgImage from './assets/background.jpg';
 import { Radio } from 'lucide-react';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'https://resqnet-kpo0.onrender.com';
@@ -26,6 +27,10 @@ function AppContent() {
   const [broadcast, setBroadcast] = useState(null);
   const [form, setForm] = useState({ location: '', description: '', media: null, coords: null });
   const [showLogin, setShowLogin] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--site-bg-image', `url(${bgImage})`);
+  }, []);
 
   useEffect(() => {
     if (!user) return;
