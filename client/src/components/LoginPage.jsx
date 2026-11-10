@@ -43,11 +43,6 @@ export default function LoginPage({ onBack }) {
 
   return (
     <div className="login-page">
-      {/* Animated background grid */}
-      <div className="login-bg-grid" />
-      <div className="login-bg-glow login-bg-glow-1" />
-      <div className="login-bg-glow login-bg-glow-2" />
-
       <div className="login-card animate-fade-in">
         {/* Back to landing */}
         {onBack && (

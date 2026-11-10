@@ -96,12 +96,6 @@ export default function LandingPage({ onGetStarted }) {
 
   return (
     <div className="landing-page">
-      {/* Animated background */}
-      <div className="landing-bg-grid" />
-      <div className="landing-bg-glow landing-bg-glow-1" />
-      <div className="landing-bg-glow landing-bg-glow-2" />
-      <div className="landing-bg-glow landing-bg-glow-3" />
-
       {/* Hero Section */}
       <section className="landing-hero">
         <div className="landing-hero-badge animate-fade-in">
