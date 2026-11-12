@@ -10,6 +10,10 @@
 <p align="center">
   <em>Bridging the gap between crisis and response using Gemini AI to save lives through faster, smarter, and more accessible emergency coordination.</em>
 </p>
+<p align="center">
+  <img src="client/public/banner.jpg" alt="ResQnet Banner" width="100%" />
+</p>
+
 
 <p align="center">
   <a href="https://res-qnet-one.vercel.app">🌐 Live Demo</a> •

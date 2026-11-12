@@ -173,7 +173,7 @@ body {
   height: 100%;
   background-image: var(--site-bg-image, url('/background.jpg'));
   background-size: cover;
-  background-position: center 30%;
+  background-position: center top;
   background-repeat: no-repeat;
   filter: none;
   transform: translateZ(0);
@@ -3143,6 +3143,7 @@ body {
    =========================== */
 
 @media (max-width: 768px) {
+  .fixed-bg-image { background-position: 45% top; }
   .landing-hero-title { font-size: 44px; }
   .landing-hero-desc { font-size: 15px; }
   .landing-section-title { font-size: 28px; }
