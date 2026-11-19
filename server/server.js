@@ -1,21 +1,23 @@
-The user wants me to apply the suggested edit to the original code. The suggested edit adds authentication middleware and applies it to certain routes. I need to integrate the changes while preserving the existing code structure.
+1. The original code has the server.listen at the end
+2. The suggested edit adds Socket.io connection handling (io.on('connection', ...) with join-staff and disconnect events) before server.listen
 
+I need to insert this code before the server.listen block while preserving everything else. The original code already has the Socket.io setup (io = new Server(server, ...)), so I just need to add the connection handling.
 
-Let me carefully merge the suggested edit into the original code:
-
-1. Add the authentication middleware functions after the `db` initialization
-2. Apply `requireAuth` to `/api/staff`, `/api/analyze`, `/api/sos`
-3. Apply `requireAuth` and `requireStaff` to `/api/broadcast` and `/api/incident/status`
-
-I need to be careful about the order - the middleware should be defined before the routes that use them. The suggested edit shows the middleware being added after `db` initialization and before the routes.
-Let me construct the completerequire('dotenv').config({ path: __dirname + '/.env' });
+Let me output the complete modified file with this additionrequire('dotenv').config({ path: __dirname + '/.env' });
 const express = require('express');
 const cors = require('cors');
+const http = require('http');
+const { Server } = require('socket.io');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const admin = require('firebase-admin');
 const { getAuth } = require('firebase-admin/auth');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: { origin: '*' }
+});
+
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Support large image uploads
 
@@ -155,6 +157,10 @@ app.post('/api/sos', requireAuth, async (req, res) => {
         if (!db) throw new Error("Firestore Admin not initialized");
         const docRef = await db.collection('incidents').add(newIncident);
         
+        // Emit real-time event to staff
+        const incidentForStaff = { ...newIncident, firebaseId: docRef.id };
+        io.to('staff').emit('new-incident', incidentForStaff);
+
         res.json({ success: true, id: docRef.id, aiResult });
     } catch (error) {
         console.error('Error processing SOS:', error);
@@ -198,7 +204,22 @@ app.post('/api/incident/status', requireAuth, requireStaff, async (req, res) => 
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, "0.0.0.0", () => {
+
+// --- Socket.io Connection Handling ---
+io.on('connection', (socket) => {
+    console.log('Client connected:', socket.id);
+
+    socket.on('join-staff', () => {
+        socket.join('staff');
+        console.log('Staff joined room:', socket.id);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Client disconnected:', socket.id);
+    });
+});
+
+server.listen(PORT, "0.0.0.0", () => {
     console.log('--------------------------------------------');
     console.log(`🚀 RESQNET CORE (SERVERLESS API) ACTIVE ON PORT ${PORT}`);
     console.log(`📋 Staff emails configured: ${STAFF_EMAILS.length}`);
