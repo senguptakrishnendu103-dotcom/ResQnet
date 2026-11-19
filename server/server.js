@@ -1,15 +1,15 @@
-The user wants me to apply a suggested edit to the original code. The suggested edit modifies the `/api/sos` route to handle AI analysis failures gracefully by using a fallback object instead of letting the error bubble up and return a 500 error.
+- `rateLimit` from `express-rate-limit`
+- `body` and `validationResult` from `express-validator`
 
-Let me identify the changes:
-1. In the `/api/sos` route, wrap the `analyzeCrisisAI` call in a try-catch
-2. If AI fails, use a fallback object and set `aiStatus = 'failed'`
-3. Add `aiStatus` field to the incident record
-4. Return `aiStatus` in the response
-I need to output the complete modified file withrequire('dotenv').config({ path: __dirname + '/.env' });
+I need to add these imports to the existing imports section while preserving all other code exactly as-is.
+
+Let me find the imports section in the original code and add the new imports.require('dotenv').config({ path: __dirname + '/.env' });
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
+const rateLimit = require('express-rate-limit');
+const { body, validationResult } = require('express-validator');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const admin = require('firebase-admin');
 const { getAuth } = require('firebase-admin/auth');
@@ -21,6 +21,7 @@ const io = new Server(server, {
 });
 
 app.use(cors());
+
 app.use(express.json({ limit: '50mb' })); // Support large image uploads
 
 // --- Firebase Admin Configuration ---
@@ -78,6 +79,39 @@ const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 const DEFAULT_STAFF = 'senguptakrishnendu103@gmail.com,staff@resqnet.com,admin@resqnet.com';
 const STAFF_EMAILS = (process.env.STAFF_EMAILS || DEFAULT_STAFF).split(',').map(e => e.trim().toLowerCase());
 
+// --- Rate Limiting & Validation Middleware ---
+const sosLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 5, // 5 requests per minute per IP
+    message: { error: 'Too many SOS requests, please try again later' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+const validateSOS = [
+    body('description').trim().notEmpty().withMessage('Description is required'),
+    body('location').trim().notEmpty().withMessage('Location is required'),
+    body('media').optional().isString(),
+    (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        next();
+    }
+];
+
+const validateBroadcast = [
+    body('message').trim().notEmpty().withMessage('Broadcast message is required'),
+    (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        next();
+    }
+];
+
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', service: 'ResQnet Core API', timestamp: new Date().toISOString() });
 });
@@ -131,7 +165,7 @@ app.post('/api/analyze', requireAuth, async (req, res) => {
 });
 
 // SECURE BACKEND ROUTE: POST /api/sos
-app.post('/api/sos', requireAuth, async (req, res) => {
+app.post('/api/sos', sosLimiter, requireAuth, validateSOS, async (req, res) => {
     try {
         const data = req.body;
 
@@ -179,7 +213,7 @@ app.post('/api/sos', requireAuth, async (req, res) => {
 });
 
 // SECURE BACKEND ROUTE: POST /api/broadcast
-app.post('/api/broadcast', requireAuth, requireStaff, async (req, res) => {
+app.post('/api/broadcast', requireAuth, requireStaff, validateBroadcast, async (req, res) => {
     try {
         const data = req.body;
         const newBroadcast = {
@@ -198,8 +232,20 @@ app.post('/api/broadcast', requireAuth, requireStaff, async (req, res) => {
     }
 });
 
+const validateStatusUpdate = [
+    body('id').trim().notEmpty().withMessage('Incident ID is required'),
+    body('status').trim().notEmpty().withMessage('Status is required'),
+    (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        next();
+    }
+];
+
 // SECURE BACKEND ROUTE: POST /api/incident/status
-app.post('/api/incident/status', requireAuth, requireStaff, async (req, res) => {
+app.post('/api/incident/status', requireAuth, requireStaff, validateStatusUpdate, async (req, res) => {
     try {
         const { id, status } = req.body;
         if (!db) throw new Error("Firestore Admin not initialized");
