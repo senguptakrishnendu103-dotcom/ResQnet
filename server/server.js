@@ -1,9 +1,11 @@
-1. The original code has the server.listen at the end
-2. The suggested edit adds Socket.io connection handling (io.on('connection', ...) with join-staff and disconnect events) before server.listen
+The user wants me to apply a suggested edit to the original code. The suggested edit modifies the `/api/sos` route to handle AI analysis failures gracefully by using a fallback object instead of letting the error bubble up and return a 500 error.
 
-I need to insert this code before the server.listen block while preserving everything else. The original code already has the Socket.io setup (io = new Server(server, ...)), so I just need to add the connection handling.
-
-Let me output the complete modified file with this additionrequire('dotenv').config({ path: __dirname + '/.env' });
+Let me identify the changes:
+1. In the `/api/sos` route, wrap the `analyzeCrisisAI` call in a try-catch
+2. If AI fails, use a fallback object and set `aiStatus = 'failed'`
+3. Add `aiStatus` field to the incident record
+4. Return `aiStatus` in the response
+I need to output the complete modified file withrequire('dotenv').config({ path: __dirname + '/.env' });
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
@@ -111,7 +113,7 @@ async function analyzeCrisisAI(data) {
         throw new Error("No JSON object found in model output: " + responseText);
     } catch (e) {
         console.error('AI analysis error:', e.message);
-        return { cat: "Pending", sev: "STABLE", act: "Awaiting human triage.", trans: data.description || "" };
+        throw e; // Re-throw to let caller handle
     }
 }
 
@@ -134,7 +136,15 @@ app.post('/api/sos', requireAuth, async (req, res) => {
         const data = req.body;
 
         // 1. Run Gemini AI Predictive Analysis
-        const aiResult = await analyzeCrisisAI(data);
+        let aiResult;
+        let aiStatus = 'completed';
+        try {
+            aiResult = await analyzeCrisisAI(data);
+        } catch (aiError) {
+            console.error('AI analysis failed, using fallback:', aiError.message);
+            aiResult = { cat: "Pending", sev: "STABLE", act: "Awaiting human triage.", trans: data.description || "" };
+            aiStatus = 'failed';
+        }
 
         // 2. Prepare Incident Record
         const newIncident = {
@@ -148,6 +158,7 @@ app.post('/api/sos', requireAuth, async (req, res) => {
             aiAdvice: aiResult.act,
             translatedDesc: aiResult.trans,
             status: 'Pending',
+            aiStatus: aiStatus,
             timestamp: new Date().toLocaleTimeString(),
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             reportedBy: data.reportedBy || 'anonymous'
@@ -160,8 +171,7 @@ app.post('/api/sos', requireAuth, async (req, res) => {
         // Emit real-time event to staff
         const incidentForStaff = { ...newIncident, firebaseId: docRef.id };
         io.to('staff').emit('new-incident', incidentForStaff);
-
-        res.json({ success: true, id: docRef.id, aiResult });
+        res.json({ success: true, id: docRef.id, aiResult, aiStatus });
     } catch (error) {
         console.error('Error processing SOS:', error);
         res.status(500).json({ error: error.message });
@@ -180,7 +190,7 @@ app.post('/api/broadcast', requireAuth, requireStaff, async (req, res) => {
 
         if (!db) throw new Error("Firestore Admin not initialized");
         const docRef = await db.collection('broadcasts').add(newBroadcast);
-        
+
         res.json({ success: true, id: docRef.id });
     } catch (error) {
         console.error('Error broadcasting:', error);
