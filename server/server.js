@@ -1,8 +1,19 @@
-require('dotenv').config({ path: __dirname + '/.env' });
+The user wants me to apply the suggested edit to the original code. The suggested edit adds authentication middleware and applies it to certain routes. I need to integrate the changes while preserving the existing code structure.
+
+
+Let me carefully merge the suggested edit into the original code:
+
+1. Add the authentication middleware functions after the `db` initialization
+2. Apply `requireAuth` to `/api/staff`, `/api/analyze`, `/api/sos`
+3. Apply `requireAuth` and `requireStaff` to `/api/broadcast` and `/api/incident/status`
+
+I need to be careful about the order - the middleware should be defined before the routes that use them. The suggested edit shows the middleware being added after `db` initialization and before the routes.
+Let me construct the completerequire('dotenv').config({ path: __dirname + '/.env' });
 const express = require('express');
 const cors = require('cors');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const admin = require('firebase-admin');
+const { getAuth } = require('firebase-admin/auth');
 
 const app = express();
 app.use(cors());
@@ -27,6 +38,28 @@ try {
 
 const db = admin.apps.length > 0 ? admin.firestore() : null;
 
+// --- Authentication Middleware ---
+async function requireAuth(req, res, next) {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ error: 'Unauthorized: No token provided' });
+    }
+    try {
+        req.user = await getAuth().verifyIdToken(token);
+        next();
+    } catch (err) {
+        return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+}
+
+function requireStaff(req, res, next) {
+    const email = req.user?.email?.toLowerCase();
+    if (!email || !STAFF_EMAILS.includes(email)) {
+        return res.status(403).json({ error: 'Forbidden: Staff access required' });
+    }
+    next();
+}
+
 // --- Gemini Configuration (from .env) ---
 const API_KEY = process.env.GEMINI_API_KEY;
 if (!API_KEY) {
@@ -45,21 +78,20 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', service: 'ResQnet Core API', timestamp: new Date().toISOString() });
 });
 
-app.get('/api/staff', (req, res) => {
+app.get('/api/staff', requireAuth, (req, res) => {
     res.json({ staffEmails: STAFF_EMAILS });
 });
 
 async function analyzeCrisisAI(data) {
     try {
-        const prompt = `Act as an emergency AI dispatcher. Analyze the input. 
+        const prompt = `Act as an emergency AI dispatcher. Analyze the input.
         Return ONLY valid JSON with no markdown wrapping: {"cat": "Medical/Fire/Security/Earthquake", "sev": "CRITICAL/STABLE", "act": "One instruction", "trans": "English translation"}`;
-        
         const parts = [{ text: prompt }];
-        
+
         if (data.description) {
             parts.push({ text: `Input: ${data.description}` });
         }
-        
+
         if (data.media && typeof data.media === 'string' && data.media.startsWith('data:')) {
             const match = data.media.match(/^data:([^;]+);base64,(.+)$/);
             if (match) {
@@ -68,7 +100,6 @@ async function analyzeCrisisAI(data) {
                 parts.push({ inlineData: { mimeType, data: base64Data } });
             }
         }
-        
         const result = await model.generateContent(parts);
         const responseText = result.response.text();
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
@@ -84,7 +115,7 @@ async function analyzeCrisisAI(data) {
 
 // LIGHTWEIGHT AI-ONLY ROUTE: POST /api/analyze
 // Client writes to Firestore directly, then calls this for AI analysis only
-app.post('/api/analyze', async (req, res) => {
+app.post('/api/analyze', requireAuth, async (req, res) => {
     try {
         const data = req.body;
         const aiResult = await analyzeCrisisAI(data);
@@ -96,13 +127,13 @@ app.post('/api/analyze', async (req, res) => {
 });
 
 // SECURE BACKEND ROUTE: POST /api/sos
-app.post('/api/sos', async (req, res) => {
+app.post('/api/sos', requireAuth, async (req, res) => {
     try {
         const data = req.body;
-        
+
         // 1. Run Gemini AI Predictive Analysis
         const aiResult = await analyzeCrisisAI(data);
-        
+
         // 2. Prepare Incident Record
         const newIncident = {
             id: Date.now().toString(),
@@ -132,7 +163,7 @@ app.post('/api/sos', async (req, res) => {
 });
 
 // SECURE BACKEND ROUTE: POST /api/broadcast
-app.post('/api/broadcast', async (req, res) => {
+app.post('/api/broadcast', requireAuth, requireStaff, async (req, res) => {
     try {
         const data = req.body;
         const newBroadcast = {
@@ -152,13 +183,13 @@ app.post('/api/broadcast', async (req, res) => {
 });
 
 // SECURE BACKEND ROUTE: POST /api/incident/status
-app.post('/api/incident/status', async (req, res) => {
+app.post('/api/incident/status', requireAuth, requireStaff, async (req, res) => {
     try {
         const { id, status } = req.body;
         if (!db) throw new Error("Firestore Admin not initialized");
-        
+
         await db.collection('incidents').doc(id).update({ status });
-        
+
         res.json({ success: true });
     } catch (error) {
         console.error('Error updating status:', error);
